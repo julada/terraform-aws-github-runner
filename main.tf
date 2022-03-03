@@ -20,7 +20,7 @@ resource "random_string" "random" {
 data "aws_iam_policy_document" "deny_unsecure_transport" {
   statement {
     sid = "DenyUnsecureTransport"
-    
+
     effect = "Deny"
 
     principals {
