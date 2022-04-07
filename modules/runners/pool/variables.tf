@@ -51,3 +51,9 @@ variable "config" {
     role_path                 = string
   })
 }
+
+variable "aws_partition" {
+  description = "(optional) partition for the arn if not 'aws'"
+  type        = string
+  default     = "aws"
+}

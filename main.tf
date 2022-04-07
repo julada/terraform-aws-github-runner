@@ -20,7 +20,7 @@ resource "random_string" "random" {
 data "aws_iam_policy_document" "deny_unsecure_transport" {
   statement {
     sid = "DenyUnsecureTransport"
-    
+
     effect = "Deny"
 
     principals {
@@ -67,6 +67,7 @@ resource "aws_sqs_queue" "queued_builds" {
 
 
 resource "aws_sqs_queue_policy" "build_queue_dlq_policy" {
+  count     = var.redrive_build_queue.enabled ? 1 : 0
   queue_url = aws_sqs_queue.queued_builds.id
   policy    = data.aws_iam_policy_document.deny_unsecure_transport.json
 }
@@ -122,11 +123,12 @@ module "webhook" {
 module "runners" {
   source = "./modules/runners"
 
-  aws_region  = var.aws_region
-  vpc_id      = var.vpc_id
-  subnet_ids  = var.subnet_ids
-  environment = var.environment
-  tags        = local.tags
+  aws_region    = var.aws_region
+  aws_partition = var.aws_partition
+  vpc_id        = var.vpc_id
+  subnet_ids    = var.subnet_ids
+  environment   = var.environment
+  tags          = local.tags
 
   s3_bucket_runner_binaries   = module.runner_binaries.bucket
   s3_location_runner_binaries = local.s3_action_runner_url
@@ -146,6 +148,7 @@ module "runners" {
   github_app_parameters                = local.github_app_parameters
   enable_organization_runners          = var.enable_organization_runners
   enable_ephemeral_runners             = var.enable_ephemeral_runners
+  enable_job_queued_check              = var.enable_job_queued_check
   disable_runner_autoupdate            = var.disable_runner_autoupdate
   enable_managed_runner_security_group = var.enable_managed_runner_security_group
   scale_down_schedule_expression       = var.scale_down_schedule_expression
