@@ -96,6 +96,7 @@ beforeEach(() => {
   const mockTokenReturnValue = {
     data: {
       token: '1234abcd',
+      expires_at: 'some_date',
     },
   };
   const mockInstallationIdReturnValueOrgs = {
@@ -224,12 +225,12 @@ describe('scaleUp with GHES', () => {
 
     it('creates a runner with correct config', async () => {
       await scaleUpModule.scaleUp('aws:sqs', TEST_DATA);
-      expect(createRunner).toBeCalledWith(expectedRunnerParams);
+      expect(createRunner).toBeCalledWith(expectedRunnerParams, 'some_date');
     });
 
     it('creates a runner with legacy event check_run', async () => {
       await scaleUpModule.scaleUp('aws:sqs', { ...TEST_DATA, eventType: 'check_run' });
-      expect(createRunner).toBeCalledWith(expectedRunnerParams);
+      expect(createRunner).toBeCalledWith(expectedRunnerParams, 'some_date');
     });
 
     it('creates a runner with labels in a specific group', async () => {
@@ -241,7 +242,7 @@ describe('scaleUp with GHES', () => {
         '--labels label1,label2',
         '--runnergroup TEST_GROUP',
       ];
-      expect(createRunner).toBeCalledWith(expectedRunnerParams);
+      expect(createRunner).toBeCalledWith(expectedRunnerParams, 'some_date');
     });
   });
 
@@ -324,7 +325,7 @@ describe('scaleUp with GHES', () => {
         ...expectedRunnerParams.runnerServiceConfig,
         `--labels label1,label2`,
       ];
-      expect(createRunner).toBeCalledWith(expectedRunnerParams);
+      expect(createRunner).toBeCalledWith(expectedRunnerParams, 'some_date');
     });
 
     it('creates a runner and ensure the group argument is ignored', async () => {
@@ -335,7 +336,7 @@ describe('scaleUp with GHES', () => {
         ...expectedRunnerParams.runnerServiceConfig,
         `--labels label1,label2`,
       ];
-      expect(createRunner).toBeCalledWith(expectedRunnerParams);
+      expect(createRunner).toBeCalledWith(expectedRunnerParams, 'some_date');
     });
 
     it('Check error is thrown', async () => {
@@ -440,12 +441,12 @@ describe('scaleUp with public GH', () => {
 
     it('creates a runner with correct config', async () => {
       await scaleUpModule.scaleUp('aws:sqs', TEST_DATA);
-      expect(createRunner).toBeCalledWith(expectedRunnerParams);
+      expect(createRunner).toBeCalledWith(expectedRunnerParams, 'some_date');
     });
 
     it('creates a runner with legacy event check_run', async () => {
       await scaleUpModule.scaleUp('aws:sqs', { ...TEST_DATA, eventType: 'check_run' });
-      expect(createRunner).toBeCalledWith(expectedRunnerParams);
+      expect(createRunner).toBeCalledWith(expectedRunnerParams, 'some_date');
     });
 
     it('creates a runner with labels in s specific group', async () => {
@@ -457,7 +458,7 @@ describe('scaleUp with public GH', () => {
         `--labels label1,label2`,
         `--runnergroup TEST_GROUP`,
       ];
-      expect(createRunner).toBeCalledWith(expectedRunnerParams);
+      expect(createRunner).toBeCalledWith(expectedRunnerParams, 'some_date');
     });
   });
 
@@ -525,7 +526,7 @@ describe('scaleUp with public GH', () => {
         ...expectedRunnerParams.runnerServiceConfig,
         `--labels label1,label2`,
       ];
-      expect(createRunner).toBeCalledWith(expectedRunnerParams);
+      expect(createRunner).toBeCalledWith(expectedRunnerParams, 'some_date');
     });
 
     it('creates a runner and ensure the group argument is ignored', async () => {
@@ -536,7 +537,7 @@ describe('scaleUp with public GH', () => {
         ...expectedRunnerParams.runnerServiceConfig,
         `--labels label1,label2`,
       ];
-      expect(createRunner).toBeCalledWith(expectedRunnerParams);
+      expect(createRunner).toBeCalledWith(expectedRunnerParams, 'some_date');
     });
 
     it('ephemeral runners only run with workflow_job event, others should fail.', async () => {
@@ -556,7 +557,7 @@ describe('scaleUp with public GH', () => {
       await scaleUpModule.scaleUp('aws:sqs', TEST_DATA);
       expectedRunnerParams.runnerServiceConfig = [...expectedRunnerParams.runnerServiceConfig, `--ephemeral`];
       expect(mockOctokit.actions.getJobForWorkflowRun).not.toBeCalled();
-      expect(createRunner).toBeCalledWith(expectedRunnerParams);
+      expect(createRunner).toBeCalledWith(expectedRunnerParams, 'some_date');
     });
 
     it('creates a ephemeral runner after checking job is queued.', async () => {
@@ -565,14 +566,14 @@ describe('scaleUp with public GH', () => {
       await scaleUpModule.scaleUp('aws:sqs', TEST_DATA);
       expect(mockOctokit.actions.getJobForWorkflowRun).toBeCalled();
       expectedRunnerParams.runnerServiceConfig = [...expectedRunnerParams.runnerServiceConfig, `--ephemeral`];
-      expect(createRunner).toBeCalledWith(expectedRunnerParams);
+      expect(createRunner).toBeCalledWith(expectedRunnerParams, 'some_date');
     });
 
     it('disable auto update on the runner.', async () => {
       process.env.DISABLE_RUNNER_AUTOUPDATE = 'true';
       await scaleUpModule.scaleUp('aws:sqs', TEST_DATA);
       expectedRunnerParams.runnerServiceConfig = [...expectedRunnerParams.runnerServiceConfig, `--disableupdate`];
-      expect(createRunner).toBeCalledWith(expectedRunnerParams);
+      expect(createRunner).toBeCalledWith(expectedRunnerParams, 'some_date');
     });
 
     it('Scaling error should cause reject so retry can be triggered.', async () => {

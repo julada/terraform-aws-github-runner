@@ -67,7 +67,7 @@ async function getGithubRunnerRegistrationToken(githubRunnerConfig: CreateGitHub
           owner: githubRunnerConfig.runnerOwner.split('/')[0],
           repo: githubRunnerConfig.runnerOwner.split('/')[1],
         });
-  return registrationToken.data.token;
+  return registrationToken.data;
 }
 
 async function getInstallationId(
@@ -125,16 +125,19 @@ export async function createRunners(
   ec2RunnerConfig: CreateEC2RunnerConfig,
   ghClient: Octokit,
 ): Promise<void> {
-  const token = await getGithubRunnerRegistrationToken(githubRunnerConfig, ghClient);
+  const tokenData = await getGithubRunnerRegistrationToken(githubRunnerConfig, ghClient);
 
-  const runnerServiceConfig = generateRunnerServiceConfig(githubRunnerConfig, token);
+  const runnerServiceConfig = generateRunnerServiceConfig(githubRunnerConfig, tokenData.token);
 
-  await createRunner({
-    runnerServiceConfig,
-    runnerType: githubRunnerConfig.runnerType,
-    runnerOwner: githubRunnerConfig.runnerOwner,
-    ...ec2RunnerConfig,
-  });
+  await createRunner(
+    {
+      runnerServiceConfig,
+      runnerType: githubRunnerConfig.runnerType,
+      runnerOwner: githubRunnerConfig.runnerOwner,
+      ...ec2RunnerConfig,
+    },
+    tokenData.expires_at,
+  );
 }
 
 export async function scaleUp(eventSource: string, payload: ActionRequestMessage): Promise<void> {

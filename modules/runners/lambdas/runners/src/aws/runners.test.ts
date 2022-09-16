@@ -194,7 +194,7 @@ describe('create runner', () => {
   });
 
   it('calls create fleet of 1 instance with the correct config for repo', async () => {
-    await createRunner(createRunnerConfig({ ...defaultRunnerConfig, type: 'Repo' }));
+    await createRunner(createRunnerConfig({ ...defaultRunnerConfig, type: 'Repo' }), 'some_date');
     expect(mockEC2.createFleet).toBeCalledWith(
       expectedCreateFleetRequest({ ...defaultExpectedFleetRequestValues, type: 'Repo' }),
     );
@@ -207,7 +207,7 @@ describe('create runner', () => {
       Instances: instances,
     });
 
-    await createRunner({ ...createRunnerConfig(defaultRunnerConfig), numberOfRunners: 2 });
+    await createRunner({ ...createRunnerConfig(defaultRunnerConfig), numberOfRunners: 2 }, 'some_date');
 
     expect(mockEC2.createFleet).toBeCalledWith(
       expectedCreateFleetRequest({ ...defaultExpectedFleetRequestValues, totalTargetCapacity: 2 }),
@@ -216,6 +216,7 @@ describe('create runner', () => {
     for (const instance of instances[0].InstanceIds) {
       expect(mockSSM.putParameter).toBeCalledWith({
         Name: `unit-test-environment-${instance}`,
+        Policies: '[{"Type":"Expiration","Version":"1.0","Attributes":{"Timestamp":"some_date"}}]',
         Type: 'SecureString',
         Value: '--token foo --url http://github.com',
       });
@@ -223,13 +224,13 @@ describe('create runner', () => {
   });
 
   it('calls create fleet of 1 instance with the correct config for org', async () => {
-    await createRunner(createRunnerConfig(defaultRunnerConfig));
+    await createRunner(createRunnerConfig(defaultRunnerConfig), 'some_date');
     expect(mockEC2.createFleet).toBeCalledWith(expectedCreateFleetRequest(defaultExpectedFleetRequestValues));
     expect(mockSSM.putParameter).toBeCalledTimes(1);
   });
 
   it('calls create fleet of 1 instance with the on-demand capacity', async () => {
-    await createRunner(createRunnerConfig({ ...defaultRunnerConfig, capacityType: 'on-demand' }));
+    await createRunner(createRunnerConfig({ ...defaultRunnerConfig, capacityType: 'on-demand' }), 'some_date');
     expect(mockEC2.createFleet).toBeCalledWith(
       expectedCreateFleetRequest({ ...defaultExpectedFleetRequestValues, capacityType: 'on-demand' }),
     );
@@ -237,16 +238,17 @@ describe('create runner', () => {
   });
 
   it('calls run instances with the on-demand capacity', async () => {
-    await createRunner(createRunnerConfig({ ...defaultRunnerConfig, maxSpotPrice: '0.1' }));
+    await createRunner(createRunnerConfig({ ...defaultRunnerConfig, maxSpotPrice: '0.1' }), 'some_date');
     expect(mockEC2.createFleet).toBeCalledWith(
       expectedCreateFleetRequest({ ...defaultExpectedFleetRequestValues, maxSpotPrice: '0.1' }),
     );
   });
 
   it('creates ssm parameters for each created instance', async () => {
-    await createRunner(createRunnerConfig(defaultRunnerConfig));
+    await createRunner(createRunnerConfig(defaultRunnerConfig), 'some_date');
     expect(mockSSM.putParameter).toBeCalledWith({
       Name: `${ENVIRONMENT}-i-1234`,
+      Policies: '[{"Type":"Expiration","Version":"1.0","Attributes":{"Timestamp":"some_date"}}]',
       Value: '--token foo --url http://github.com',
       Type: 'SecureString',
     });
@@ -256,7 +258,7 @@ describe('create runner', () => {
     mockCreateFleet.promise.mockReturnValue({
       Instances: [],
     });
-    await expect(createRunner(createRunnerConfig(defaultRunnerConfig))).rejects.toThrowError(Error);
+    await expect(createRunner(createRunnerConfig(defaultRunnerConfig), 'some_date')).rejects.toThrowError(Error);
     expect(mockSSM.putParameter).not.toBeCalled();
   });
 });
@@ -284,7 +286,7 @@ describe('create runner with errors', () => {
   it('test ScaleError with one error.', async () => {
     createFleetMockWithErrors(['UnfulfillableCapacity']);
 
-    await expect(createRunner(createRunnerConfig(defaultRunnerConfig))).rejects.toBeInstanceOf(ScaleError);
+    await expect(createRunner(createRunnerConfig(defaultRunnerConfig), 'some_date')).rejects.toBeInstanceOf(ScaleError);
     expect(mockEC2.createFleet).toBeCalledWith(expectedCreateFleetRequest(defaultExpectedFleetRequestValues));
     expect(mockSSM.putParameter).not.toBeCalled();
   });
@@ -292,7 +294,7 @@ describe('create runner with errors', () => {
   it('test ScaleError with multiple error.', async () => {
     createFleetMockWithErrors(['UnfulfillableCapacity', 'SomeError']);
 
-    await expect(createRunner(createRunnerConfig(defaultRunnerConfig))).rejects.toBeInstanceOf(ScaleError);
+    await expect(createRunner(createRunnerConfig(defaultRunnerConfig), 'some_date')).rejects.toBeInstanceOf(ScaleError);
     expect(mockEC2.createFleet).toBeCalledWith(expectedCreateFleetRequest(defaultExpectedFleetRequestValues));
     expect(mockSSM.putParameter).not.toBeCalled();
   });
@@ -300,7 +302,7 @@ describe('create runner with errors', () => {
   it('test default Error', async () => {
     createFleetMockWithErrors(['NonMappedError']);
 
-    await expect(createRunner(createRunnerConfig(defaultRunnerConfig))).rejects.toBeInstanceOf(Error);
+    await expect(createRunner(createRunnerConfig(defaultRunnerConfig), 'some_date')).rejects.toBeInstanceOf(Error);
     expect(mockEC2.createFleet).toBeCalledWith(expectedCreateFleetRequest(defaultExpectedFleetRequestValues));
     expect(mockSSM.putParameter).not.toBeCalled();
   });
@@ -308,7 +310,7 @@ describe('create runner with errors', () => {
   it('test now error is thrown if an instance is created', async () => {
     createFleetMockWithErrors(['NonMappedError'], ['i-123']);
 
-    expect(await createRunner(createRunnerConfig(defaultRunnerConfig))).resolves;
+    expect(await createRunner(createRunnerConfig(defaultRunnerConfig), 'some_date')).resolves;
     expect(mockEC2.createFleet).toBeCalledWith(expectedCreateFleetRequest(defaultExpectedFleetRequestValues));
     expect(mockSSM.putParameter).toBeCalled();
   });
@@ -322,7 +324,7 @@ describe('create runner with errors', () => {
       };
     });
 
-    await expect(createRunner(createRunnerConfig(defaultRunnerConfig))).rejects.toBeInstanceOf(Error);
+    await expect(createRunner(createRunnerConfig(defaultRunnerConfig), 'some_date')).rejects.toBeInstanceOf(Error);
     expect(mockEC2.createFleet).toBeCalledWith(expectedCreateFleetRequest(defaultExpectedFleetRequestValues));
     expect(mockSSM.putParameter).not.toBeCalled();
   });

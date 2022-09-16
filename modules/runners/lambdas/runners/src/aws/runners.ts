@@ -123,7 +123,7 @@ function generateFleeOverrides(
   return result;
 }
 
-export async function createRunner(runnerParameters: RunnerInputParameters): Promise<void> {
+export async function createRunner(runnerParameters: RunnerInputParameters, tokenExpiration: string): Promise<void> {
   logger.debug('Runner configuration: ' + JSON.stringify(runnerParameters), LogFields.print());
 
   const ec2 = new EC2();
@@ -203,12 +203,22 @@ export async function createRunner(runnerParameters: RunnerInputParameters): Pro
   logger.info('Created instance(s): ', instances.join(','), LogFields.print());
 
   const ssm = new SSM();
+  const expirationPolicy = [
+    {
+      Type: 'Expiration',
+      Version: '1.0',
+      Attributes: {
+        Timestamp: tokenExpiration,
+      },
+    },
+  ];
   for (const instance of instances) {
     await ssm
       .putParameter({
         Name: `${runnerParameters.environment}-${instance}`,
         Value: runnerParameters.runnerServiceConfig.join(' '),
         Type: 'SecureString',
+        Policies: JSON.stringify(expirationPolicy),
       })
       .promise();
   }
